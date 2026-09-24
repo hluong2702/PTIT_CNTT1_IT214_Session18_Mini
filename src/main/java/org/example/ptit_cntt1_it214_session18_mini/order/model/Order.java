@@ -35,8 +35,6 @@ public class Order {
     @Column(nullable = false)
     private OrderStatus status;
 
-    private String sagaStep;
-
     private String failureReason;
 
     private LocalDateTime createdAt;
