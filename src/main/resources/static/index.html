@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopMart Ecommerce - Hệ Thống Microservice & Saga Pattern (Session 18)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #121826;
+            --bg-card: rgba(22, 30, 49, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --secondary: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.15) 0px, transparent 50%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 28px;
+        }
+
+        .header-title h1 {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a5b4fc 0%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .badge-bar {
+            display: flex;
+            gap: 10px;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-blue { background: rgba(6, 182, 212, 0.15); color: #38bdf8; border: 1px solid rgba(6, 182, 212, 0.3); }
+        .badge-purple { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+            box-shadow: 0 0 10px currentColor;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-card .label {
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card .value {
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 8px;
+            color: #fff;
+        }
+
+        .stat-card .subtext {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 24px;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .action-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .action-card:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .action-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+            line-height: 1.4;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+        }
+
+        .btn-danger:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Console Log & Timeline */
+        .terminal {
+            background: #070a12;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 12px;
+            height: 480px;
+            overflow-y: auto;
+            color: #a5b4fc;
+        }
+
+        .terminal-line {
+            margin-bottom: 6px;
+            line-height: 1.5;
+            display: flex;
+            gap: 8px;
+            word-break: break-word;
+        }
+
+        .time-tag { color: #64748b; }
+        .tag-info { color: #38bdf8; font-weight: 600; }
+        .tag-warn { color: #f59e0b; font-weight: 600; }
+        .tag-error { color: #ef4444; font-weight: 600; }
+        .tag-success { color: #34d399; font-weight: 600; }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .stock-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .stock-in { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .stock-low { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title">
+                <h1>ShopMart Distributed Saga & Microservices Platform</h1>
+                <p>PTIT CNTT1 - IT214 Session 18 Mini Test | Spring Cloud • Kafka Event-Driven • Resilience4j • Redis</p>
+            </div>
+            <div class="badge-bar">
+                <div class="badge badge-green"><span class="pulse-dot"></span> Eureka Server (8761)</div>
+                <div class="badge badge-blue"><span class="pulse-dot"></span> API Gateway (8080)</div>
+                <div class="badge badge-purple"><span class="pulse-dot"></span> Redis Cache-Aside</div>
+            </div>
+        </header>
+
+        <!-- KPI Status Cards -->
+        <div class="grid-4">
+            <div class="stat-card">
+                <div class="label">Câu 1: Hạ Tầng Gateway & Eureka</div>
+                <div class="value" style="color: #38bdf8;">ACTIVE (3 Services)</div>
+                <div class="subtext">order-service, inventory-service, payment-service</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Câu 2: Circuit Breaker State</div>
+                <div class="value" id="cb-state" style="color: #34d399;">CLOSED (Normal)</div>
+                <div class="subtext">Resilience4j Failure Threshold: 50%</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Câu 3: Saga Orchestration</div>
+                <div class="value" id="saga-status" style="color: #a5b4fc;">READY</div>
+                <div class="subtext">Compensating Rollback & WebFlux Active</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Câu 4: Distributed Cache</div>
+                <div class="value" id="cache-metric" style="color: #fbbf24;">Cache-Aside</div>
+                <div class="subtext">@Cacheable • @CachePut • @CacheEvict</div>
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <!-- Left Column: Interactive Testing Panels -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Kịch Bản Kiểm Thử Trực Tiếp (Live Demo)</h2>
+                    <span style="font-size: 12px; color: var(--text-secondary);">Thao tác 1 chạm</span>
+                </div>
+
+                <!-- Scenario 1: Saga Success -->
+                <div class="action-card">
+                    <div class="action-title" style="color: #34d399;">
+                        <span>🛒</span> Kịch bản 1: Luồng Đặt Hàng Thành Công (Happy Path)
+                    </div>
+                    <div class="action-desc">
+                        Order khởi tạo <strong>PENDING</strong> ➔ Trừ kho Inventory (-1) ➔ Thanh toán Payment thành công ➔ Đơn hàng chuyển <strong>CONFIRMED</strong>. Chuỗi sự kiện gửi qua Kafka và WebFlux Reactive Stream.
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn-primary" onclick="runSagaSuccess()">
+                            <span>▶</span> Chạy Luồng Thành Công
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scenario 2: Saga Rollback -->
+                <div class="action-card">
+                    <div class="action-title" style="color: #f87171;">
+                        <span>🔄</span> Kịch bản 2: Luồng Bù Trừ Rollback (Compensating Transaction)
+                    </div>
+                    <div class="action-desc">
+                        Order <strong>PENDING</strong> ➔ Trừ kho (-2) ➔ <strong>Thanh toán Thất Bại (Số dư không đủ / Lỗi cổng)</strong> ➔ Kích hoạt Bù trừ: <strong>Hoàn trả tồn kho (+2)</strong> ➔ Đơn hàng <strong>CANCELLED</strong>. Dữ liệu bảo toàn 100%!
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn-danger" onclick="runSagaRollback()">
+                            <span>⚡</span> Cố Tình Gây Lỗi Thanh Toán & Rollback
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scenario 3: Circuit Breaker -->
+                <div class="action-card">
+                    <div class="action-title" style="color: #38bdf8;">
+                        <span>🛡️</span> Kịch bản 3: Kháng Lỗi Circuit Breaker (Resilience4j)
+                    </div>
+                    <div class="action-desc">
+                        Giả lập Inventory-service gặp sự cố / ngưng trệ. Circuit Breaker chuyển trạng thái <strong>CLOSED ➔ OPEN</strong>, tự động kích hoạt <strong>Fallback</strong> phản hồi an toàn, ngăn chặn lỗi dây chuyền (Cascading Failure).
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn-secondary" id="btn-toggle-down" onclick="toggleInventoryDown()">
+                            <span>⚠️</span> Giả lập Sập Kho (Toggle Down)
+                        </button>
+                        <button class="btn-secondary" onclick="testCircuitBreakerCall()">
+                            <span>📡</span> Thử gọi Inventory qua Feign
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scenario 4: Redis Cache-Aside -->
+                <div class="action-card">
+                    <div class="action-title" style="color: #fbbf24;">
+                        <span>⚡</span> Kịch bản 4: Tối Ưu Hiệu Năng Redis Cache-Aside
+                    </div>
+                    <div class="action-desc">
+                        Lần 1: Cache Miss ➔ Truy vấn Database (log [DB QUERY], ~15ms) ➔ Lưu vào Redis. Lần 2: Cache Hit ➔ Lấy trực tiếp từ Redis (&lt; 1ms, không truy vấn DB).
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn-secondary" onclick="testCacheAside()">
+                            <span>🚀</span> Kiểm tra Tốc Độ Cache-Aside (2 Lần gọi)
+                        </button>
+                        <button class="btn-secondary" onclick="evictCache()">
+                            <span>🧹</span> Xóa Cache (@CacheEvict)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product Table -->
+                <div class="table-responsive">
+                    <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px;">Tồn Kho Sản Phẩm Hiện Tại:</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Mã SP</th>
+                                <th>Tên Sản Phẩm</th>
+                                <th>Đơn Giá</th>
+                                <th>Tồn Kho</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-table-body">
+                            <tr><td colspan="5">Đang tải danh sách sản phẩm...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Right Column: Real-time Event Console -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Nhật Ký Sự Kiện Real-time (WebFlux / Kafka Stream)</h2>
+                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 11px;" onclick="clearLogs()">Xóa Log</button>
+                </div>
+                <div class="terminal" id="terminal-logs">
+                    <div class="terminal-line">
+                        <span class="time-tag">[INIT]</span>
+                        <span class="tag-info">SYSTEM</span>: Hệ thống ShopMart Saga Microservice sẵn sàng hoạt động.
+                    </div>
+                    <div class="terminal-line">
+                        <span class="time-tag">[STREAM]</span>
+                        <span class="tag-success">WEBFLUX</span>: Đã kết nối luồng sự kiện SSE phản ứng bất đồng bộ (Reactive Stream).
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isDownSimulated = false;
+
+        function appendLog(tag, type, message) {
+            const terminal = document.getElementById('terminal-logs');
+            const now = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            
+            let typeClass = 'tag-info';
+            if (type === 'SUCCESS') typeClass = 'tag-success';
+            if (type === 'WARN') typeClass = 'tag-warn';
+            if (type === 'ERROR') typeClass = 'tag-error';
+
+            line.innerHTML = `<span class="time-tag">[${now}]</span> <span class="${typeClass}">[${tag}]</span> ${message}`;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Kết nối Server-Sent Events (SSE) WebFlux
+        function connectWebFluxStream() {
+            try {
+                const eventSource = new EventSource('/api/order/events/stream');
+                eventSource.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    let tag = data.eventType;
+                    let type = 'INFO';
+                    if (tag.includes('CONFIRMED') || tag.includes('SUCCESS')) type = 'SUCCESS';
+                    if (tag.includes('FAILED') || tag.includes('CANCELLED')) type = 'ERROR';
+                    if (tag.includes('COMPENSATED')) type = 'WARN';
+                    appendLog('KAFKA-WEBFLUX', type, `Event: <strong>${data.eventType}</strong> | Order #${data.orderId}: ${data.details || ''}`);
+                    loadProducts();
+                };
+                eventSource.onerror = function() {
+                    console.log('SSE connection waiting...');
+                };
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const res = await fetch('/api/inventory/products');
+                const products = await res.json();
+                const tbody = document.getElementById('product-table-body');
+                tbody.innerHTML = '';
+                products.forEach(p => {
+                    const row = document.createElement('tr');
+                    const badgeClass = p.stockQuantity < 10 ? 'stock-low' : 'stock-in';
+                    row.innerHTML = `
+                        <td>#${p.id}</td>
+                        <td><code>${p.code}</code></td>
+                        <td><strong>${p.name}</strong></td>
+                        <td>${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price)}</td>
+                        <td><span class="stock-badge ${badgeClass}">${p.stockQuantity} sp</span></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function runSagaSuccess() {
+            appendLog('SAGA-START', 'INFO', 'Bắt đầu luồng đặt hàng thành công: Mua 1 chiếc Laptop Dell XPS 15...');
+            try {
+                const res = await fetch('/api/order/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customerId: 101,
+                        productId: 1,
+                        quantity: 1,
+                        simulatePaymentFailure: false,
+                        simulateInventoryDown: false
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    appendLog('SAGA-SUCCESS', 'SUCCESS', `Đơn hàng #${data.orderId} hoàn tất thành công! Trạng thái: CONFIRMED. Tồn kho còn: ${data.remainingStock}`);
+                    document.getElementById('saga-status').innerText = 'CONFIRMED';
+                    document.getElementById('saga-status').style.color = '#34d399';
+                }
+                loadProducts();
+            } catch (err) {
+                appendLog('ERROR', 'ERROR', 'Lỗi khi gọi API: ' + err.message);
+            }
+        }
+
+        async function runSagaRollback() {
+            appendLog('SAGA-START', 'WARN', 'Bắt đầu thử nghiệm Lỗi Thanh Toán -> Bù trừ Rollback: Mua 2 chiếc iPhone 16 Pro Max...');
+            try {
+                const res = await fetch('/api/order/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customerId: 102,
+                        productId: 2,
+                        quantity: 2,
+                        simulatePaymentFailure: true, // Cố tình gây lỗi thanh toán
+                        simulateInventoryDown: false
+                    })
+                });
+                const data = await res.json();
+                appendLog('SAGA-ROLLBACK', 'WARN', `Kết quả: ${data.message}`);
+                appendLog('CONSISTENCY', 'SUCCESS', `Kiểm tra bù trừ kho: Tồn kho đã được khôi phục nguyên vẹn: ${data.remainingStock} sp!`);
+                document.getElementById('saga-status').innerText = 'CANCELLED (Rolled Back)';
+                document.getElementById('saga-status').style.color = '#f87171';
+                loadProducts();
+            } catch (err) {
+                appendLog('ERROR', 'ERROR', 'Lỗi khi gọi API: ' + err.message);
+            }
+        }
+
+        async function toggleInventoryDown() {
+            isDownSimulated = !isDownSimulated;
+            const res = await fetch(`/api/order/circuit-breaker/simulate-down?down=${isDownSimulated}`, { method: 'POST' });
+            const data = await res.json();
+            const btn = document.getElementById('btn-toggle-down');
+            const cbState = document.getElementById('cb-state');
+
+            if (isDownSimulated) {
+                btn.innerHTML = '<span>✅</span> Phục hồi Kho (Turn ON)';
+                btn.style.background = 'rgba(239, 68, 68, 0.3)';
+                cbState.innerText = 'OPEN (Tripped)';
+                cbState.style.color = '#ef4444';
+                appendLog('CIRCUIT-BREAKER', 'ERROR', 'Đã giả lập INVENTORY-SERVICE BỊ SẬP (Sẽ kích hoạt Fallback khi gọi)');
+            } else {
+                btn.innerHTML = '<span>⚠️</span> Giả lập Sập Kho (Toggle Down)';
+                btn.style.background = '';
+                cbState.innerText = 'CLOSED (Normal)';
+                cbState.style.color = '#34d399';
+                appendLog('CIRCUIT-BREAKER', 'SUCCESS', 'Đã phục hồi INVENTORY-SERVICE hoạt động bình thường.');
+            }
+        }
+
+        async function testCircuitBreakerCall() {
+            appendLog('FEIGN-CALL', 'INFO', 'Order-service đang gọi getProductById(1) qua FeignClient...');
+            try {
+                const res = await fetch('/api/inventory/products/1');
+                const data = await res.json();
+                appendLog('FEIGN-RESPONSE', 'SUCCESS', `Nhận phản hồi: ${data.name} (Giá: ${data.price})`);
+            } catch (err) {
+                appendLog('CIRCUIT-FALLBACK', 'WARN', 'Kích hoạt Fallback: Trả về đối tượng an toàn');
+            }
+        }
+
+        async function testCacheAside() {
+            appendLog('CACHE-TEST', 'INFO', 'Bắt đầu kiểm nghiệm tốc độ Cache-Aside cho Sản phẩm #3...');
+            
+            // Lần 1
+            const t1 = performance.now();
+            const res1 = await fetch('/api/inventory/products/3');
+            const data1 = await res1.json();
+            const dur1 = (performance.now() - t1).toFixed(1);
+            appendLog('CACHE-LẦN-1', 'WARN', `Lần 1 (Cache MISS ➔ Đọc Database): ${dur1}ms | Sản phẩm: ${data1.name}`);
+
+            // Lần 2
+            const t2 = performance.now();
+            const res2 = await fetch('/api/inventory/products/3');
+            const data2 = await res2.json();
+            const dur2 = (performance.now() - t2).toFixed(1);
+            appendLog('CACHE-LẦN-2', 'SUCCESS', `Lần 2 (Cache HIT ➔ Trả từ Redis): ${dur2}ms (Tốc độ cực nhanh!)`);
+        }
+
+        async function evictCache() {
+            await fetch('/api/inventory/cache/3', { method: 'DELETE' });
+            appendLog('CACHE-EVICT', 'WARN', 'Đã xóa cache cho Sản phẩm #3 (@CacheEvict). Lần gọi kế tiếp sẽ nạp lại từ DB.');
+        }
+
+        function clearLogs() {
+            document.getElementById('terminal-logs').innerHTML = '';
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadProducts();
+            connectWebFluxStream();
+        });
+    </script>
+</body>
+</html>
